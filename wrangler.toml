@@ -5,3 +5,10 @@ compatibility_flags = ["nodejs_compat"]
 [vars]
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_test_cG9zaXRpdmUtY29kLTMxLmNsZXJrLmFjY291bnRzLmRldiQ"
 # Additional environment variables like DATABASE_URL or R2 keys should be configured in the Cloudflare Pages dashboard
+
+DATABASE_URL="postgresql://compensationdb_user:fNBYDMo0hJuxPi1AvFQy2I6v9DoSBODf@dpg-d8btg8ernols739c34dg-a.oregon-postgres.render.com/compensationdb"
+R2_ACCOUNT_ID=d6770693997da95c154619d996624df5
+R2_ACCESS_KEY_ID=ed1b78aee1e2b62a54d16b41140dee2d
+R2_SECRET_ACCESS_KEY=aa54af12c9db373753c329fc5df8bed8393f04c2ceef81a3de372969fe309b81
+R2_BUCKET_NAME=talent-dash-assets
+R2_PUBLIC_URL=https://assets.talentdash.com

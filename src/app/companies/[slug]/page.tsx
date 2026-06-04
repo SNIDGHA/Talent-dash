@@ -13,6 +13,8 @@ import { NextRequest } from 'next/server';
 export const revalidate = 3600; // Cache and revalidate company page hourly (ISR)
 export const dynamicParams = true; // Dynamically generate pages for new company slugs on demand
 
+console.log("DATABASE_URL exists:", !!process.env.DATABASE_URL);
+
 interface CompanyPageProps {
   params: Promise<{
     slug: string;
@@ -111,7 +113,7 @@ export default async function CompanyPage({ params, searchParams }: CompanyPageP
   // Compute stats
   const tcValues = salaries.map((s: any) => Number(s.totalCompensation));
   const medianTC = BigInt(median_total_compensation);
-  
+
   const sortedTCs = [...tcValues].sort((a, b) => a - b);
   const minTC = BigInt(sortedTCs[0]);
   const maxTC = BigInt(sortedTCs[sortedTCs.length - 1]);
@@ -165,7 +167,7 @@ export default async function CompanyPage({ params, searchParams }: CompanyPageP
           })
         }}
       />
-      
+
       {/* FAQ Page Schema Markup */}
       <script
         type="application/ld+json"
@@ -251,7 +253,7 @@ export default async function CompanyPage({ params, searchParams }: CompanyPageP
               <Scale className="w-3.5 h-3.5" />
               <span>Compare</span>
             </Link>
-            
+
             {/* Currency toggle */}
             <Link
               href={`/companies/${company.slug}?tab=${activeTab}&currency=${displayCurrency === Currency.INR ? 'USD' : 'INR'}`}
@@ -272,11 +274,10 @@ export default async function CompanyPage({ params, searchParams }: CompanyPageP
             <Link
               key={tab.id}
               href={getTabUrl(tab.id)}
-              className={`flex items-center space-x-2 px-4 py-3 border-b-2 text-xs font-bold whitespace-nowrap transition ${
-                isActive
-                  ? 'border-primary text-primary'
-                  : 'border-transparent text-neutral-500 hover:text-neutral-800 hover:border-neutral-300'
-              }`}
+              className={`flex items-center space-x-2 px-4 py-3 border-b-2 text-xs font-bold whitespace-nowrap transition ${isActive
+                ? 'border-primary text-primary'
+                : 'border-transparent text-neutral-500 hover:text-neutral-800 hover:border-neutral-300'
+                }`}
             >
               <Icon className="w-4 h-4" />
               <span>{tab.name}</span>
@@ -400,8 +401,8 @@ export default async function CompanyPage({ params, searchParams }: CompanyPageP
                   </thead>
                   <tbody className="divide-y divide-border">
                     {salaries.map((s: any) => (
-                      <tr 
-                        key={s.id} 
+                      <tr
+                        key={s.id}
                         className="hover:bg-hoverSurface transition text-sm text-neutral-700"
                       >
                         <td className="py-4 px-5">
@@ -493,9 +494,8 @@ export default async function CompanyPage({ params, searchParams }: CompanyPageP
             {mockData.benefits.map((benefit, idx) => {
               return (
                 <div key={idx} className="bg-white border border-border rounded-xl p-5 card-shadow flex items-start space-x-4">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                    benefit.included ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-rose-50 text-rose-500 border border-rose-100'
-                  }`}>
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${benefit.included ? 'bg-emerald-50 text-emerald-600 border border-emerald-100' : 'bg-rose-50 text-rose-500 border border-rose-100'
+                    }`}>
                     {benefit.included ? <Check className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
                   </div>
                   <div className="space-y-1">
@@ -586,9 +586,8 @@ export default async function CompanyPage({ params, searchParams }: CompanyPageP
                       <h3 className="font-extrabold text-neutral-800 text-base">{report.title}</h3>
                       <span className="text-[10px] text-neutral-400 font-semibold">{report.role} • Outcome: {report.outcome}</span>
                     </div>
-                    <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
-                      report.difficulty === 'Hard' ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-blue-50 text-blue-600 border border-blue-100'
-                    }`}>
+                    <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full ${report.difficulty === 'Hard' ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-blue-50 text-blue-600 border border-blue-100'
+                      }`}>
                       {report.difficulty} Difficulty
                     </span>
                   </div>
