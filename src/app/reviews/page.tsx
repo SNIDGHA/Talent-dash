@@ -2,7 +2,7 @@ import Link from 'next/link';
 import CompanyLogo from '@/components/features/CompanyLogo';
 import { Star, MessageSquare, ThumbsUp, ThumbsDown, CheckCircle, ChevronRight, Sparkles, PenLine, Building } from 'lucide-react';
 import React from 'react';
-
+export const runtime = "edge";
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
@@ -126,7 +126,7 @@ export default async function ReviewsHubPage() {
       <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-indigo-900 via-purple-900 to-violet-800 p-8 md:p-12 shadow-xl text-white">
         <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-60 h-60 bg-primary/10 rounded-full blur-2xl -ml-16 -mb-16 pointer-events-none" />
-        
+
         <div className="relative max-w-3xl space-y-4">
           <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-white/10 text-violet-200 text-xs font-semibold backdrop-blur-sm">
             <Star className="w-3.5 h-3.5" />
@@ -179,7 +179,7 @@ export default async function ReviewsHubPage() {
 
       {/* Top Rated Companies & Tag Cloud Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        
+
         {/* Top Rated Companies List */}
         <div className="xl:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
@@ -249,11 +249,10 @@ export default async function ReviewsHubPage() {
                   key={idx}
                   href={`/companies?search=${encodeURIComponent(tag)}`}
                   id={`tag-${idx}`}
-                  className={`text-[10px] font-bold px-3 py-1.5 rounded-lg border transition duration-150 hover:scale-105 cursor-pointer ${
-                    isPositive 
-                      ? 'bg-neutral-50 text-neutral-600 border-neutral-200/80 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200' 
-                      : 'bg-neutral-50 text-neutral-600 border-neutral-200/80 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-250'
-                  }`}
+                  className={`text-[10px] font-bold px-3 py-1.5 rounded-lg border transition duration-150 hover:scale-105 cursor-pointer ${isPositive
+                    ? 'bg-neutral-50 text-neutral-600 border-neutral-200/80 hover:bg-indigo-50 hover:text-indigo-700 hover:border-indigo-200'
+                    : 'bg-neutral-50 text-neutral-600 border-neutral-200/80 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-250'
+                    }`}
                 >
                   {tag}
                 </Link>
@@ -266,7 +265,7 @@ export default async function ReviewsHubPage() {
 
       {/* Recent Reviews & Highlights Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
+
         {/* Latest Reviews List */}
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
@@ -321,7 +320,7 @@ export default async function ReviewsHubPage() {
         <div className="lg:col-span-1 space-y-4">
           <h2 className="text-sm font-black text-neutral-700 uppercase tracking-wider">Review highlights</h2>
           <div className="bg-white border border-border/80 rounded-2xl p-5 card-shadow space-y-5 min-h-[350px] flex flex-col justify-between">
-            
+
             {/* Overall Rating Section */}
             <div className="text-center pb-4 border-b border-neutral-50 space-y-1">
               <span className="text-4xl font-black text-neutral-800 tracking-tight">4.2<span className="text-sm font-bold text-neutral-400">/5</span></span>

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
 import { Level } from '@prisma/client';
+export const runtime = "edge";
 
 export const dynamic = 'force-dynamic';
 

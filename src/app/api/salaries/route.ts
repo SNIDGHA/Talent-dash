@@ -3,7 +3,7 @@ import { prisma, serializeBigInt } from '@/lib/db';
 import { Level, Currency } from '@prisma/client';
 import { validateSalaryIngest } from '@/lib/validation';
 import { normalizeCompanyName, getCompanyDisplayName, getCompanySlug } from '@/lib/normalization';
-
+export const runtime = "edge";
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
@@ -156,9 +156,9 @@ export async function POST(request: NextRequest) {
           slug,
           normalizedName,
           industry: 'Technology',
-          headquarters: validatedData.location.includes('San Francisco') || 
-                        validatedData.location.includes('Redmond') || 
-                        validatedData.location.includes('Seattle') ? 'United States' : 'India'
+          headquarters: validatedData.location.includes('San Francisco') ||
+            validatedData.location.includes('Redmond') ||
+            validatedData.location.includes('Seattle') ? 'United States' : 'India'
         }
       });
     }

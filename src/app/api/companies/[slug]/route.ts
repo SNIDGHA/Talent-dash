@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma, serializeBigInt } from '@/lib/db';
 import { Level } from '@prisma/client';
-
+export const runtime = "edge";
 export const dynamic = 'force-dynamic';
 
 function calculateBigIntMedian(values: bigint[]): bigint {

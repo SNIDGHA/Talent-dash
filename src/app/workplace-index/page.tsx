@@ -2,7 +2,7 @@ import Link from 'next/link';
 import CompanyLogo from '@/components/features/CompanyLogo';
 import { Award, Star, ChevronRight, ShieldCheck, Sparkles, Briefcase, TrendingUp } from 'lucide-react';
 import React from 'react';
-
+export const runtime = "edge";
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
@@ -131,7 +131,7 @@ export default async function WorkplaceIndexPage() {
       <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-indigo-900 via-purple-900 to-violet-800 p-8 md:p-12 shadow-xl text-white">
         <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-60 h-60 bg-primary/10 rounded-full blur-2xl -ml-16 -mb-16 pointer-events-none" />
-        
+
         <div className="relative max-w-3xl space-y-4">
           <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-white/10 text-violet-200 text-xs font-semibold backdrop-blur-sm">
             <Award className="w-3.5 h-3.5" />
@@ -191,11 +191,11 @@ export default async function WorkplaceIndexPage() {
               <h3 className="text-xs font-black text-neutral-850 leading-tight">
                 {list.title}
               </h3>
-              
+
               <div className="space-y-2.5">
                 {list.companies.map((comp, compIdx) => (
-                  <Link 
-                    key={compIdx} 
+                  <Link
+                    key={compIdx}
                     href={`/companies/${comp.slug}`}
                     id={`ranking-${idx}-company-${comp.slug}`}
                     className="flex items-center space-x-2 p-1 hover:bg-neutral-50 rounded-lg transition"
@@ -241,7 +241,7 @@ export default async function WorkplaceIndexPage() {
                     {logo.url ? (
                       <img src={logo.url} alt={logo.name} className="w-full h-full object-contain" />
                     ) : (
-                      <span className="text-[8px] font-black text-neutral-400">{logo.name.slice(0,2).toUpperCase()}</span>
+                      <span className="text-[8px] font-black text-neutral-400">{logo.name.slice(0, 2).toUpperCase()}</span>
                     )}
                   </div>
                 ))}
@@ -256,7 +256,7 @@ export default async function WorkplaceIndexPage() {
 
       {/* Trust & Offer Evaluator Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        
+
         {/* Rankings You Can Trust */}
         <div className="xl:col-span-1 bg-white border border-border/80 rounded-2xl p-6 card-shadow flex flex-col justify-between space-y-6">
           <div className="space-y-3">
@@ -283,7 +283,7 @@ export default async function WorkplaceIndexPage() {
               </li>
             </ul>
           </div>
-          
+
           <div className="flex items-center space-x-3 pt-4 border-t border-neutral-50">
             <div className="flex -space-x-2.5">
               {trustAvatars.map((url, i) => (
@@ -367,7 +367,7 @@ export default async function WorkplaceIndexPage() {
           <Briefcase className="w-4 h-4 text-primary" />
           <h2 className="text-sm font-black text-neutral-700 uppercase tracking-wider">Powerful tools. Smarter career moves.</h2>
         </div>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-6 gap-4">
           {toolsList.map((tool, idx) => (
             <Link

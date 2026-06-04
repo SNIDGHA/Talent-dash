@@ -7,6 +7,8 @@ import Link from 'next/link';
 import { MapPin, ArrowUpDown, ChevronLeft, ChevronRight, Sparkles, TrendingUp, Building2, Briefcase, Star, Award } from 'lucide-react';
 import React from 'react';
 import SalaryFilters from '@/components/features/SalaryFilters';
+import Script from 'next/script';
+export const runtime = "edge";
 
 export const revalidate = 60; // Cache and revalidate salaries page every 60 seconds (ISR)
 
@@ -153,48 +155,42 @@ export default async function SalariesPage({ searchParams }: PageProps) {
     return `/salaries?${newParams.toString()}`;
   };
 
-  // Top Paying Companies — dynamically fetched from DB, ranked by median TC
-  const allCompaniesWithSalaries = await prisma.company.findMany({
+  // Top Paying Companies mapping (from seed database, normalized to display currency)
+  const topCompaniesRaw = await prisma.company.findMany({
+    where: {
+      slug: { in: ['google', 'microsoft', 'meta', 'apple', 'amazon'] }
+    },
     include: {
       salaries: {
-        select: {
-          totalCompensation: true,
-          currency: true,
-          isVerified: true
-        }
+        where: { isVerified: true }
       }
     }
   });
 
-  const conversionRates: Record<string, number> = { INR: 83.0, USD: 1.0, GBP: 0.8, EUR: 0.9 };
+  const topCompanies = topCompaniesRaw.map((c: any) => {
+    const totalRecords = c.salaries.length;
+    const normalizedTCs = c.salaries.map((s: any) => {
+      if (s.currency === displayCurrency) {
+        return Number(s.totalCompensation) / 100;
+      }
+      // Simple scaling for display
+      const rate = displayCurrency === 'INR' ? 83.0 : 1 / 83.0;
+      return (Number(s.totalCompensation) / 100) * rate;
+    });
 
-  const topCompanies = allCompaniesWithSalaries
-    .filter((c: any) => c.salaries.length > 0)
-    .map((c: any) => {
-      const normalizedTCs = c.salaries.map((s: any) => {
-        const standardAmount = Number(s.totalCompensation) / 100;
-        if (s.currency === displayCurrency) return standardAmount;
-        const fromRate = conversionRates[s.currency] || 1.0;
-        const toRate = conversionRates[displayCurrency] || 1.0;
-        return (standardAmount / fromRate) * toRate;
-      });
-      const sorted = [...normalizedTCs].sort((a: number, b: number) => a - b);
-      const mid = Math.floor(sorted.length / 2);
-      const medianTC = sorted.length % 2 !== 0
-        ? sorted[mid]
-        : (sorted[mid - 1] + sorted[mid]) / 2;
+    const medianTC = normalizedTCs.length > 0
+      ? Math.round(normalizedTCs.sort((a: any, b: any) => a - b)[Math.floor(normalizedTCs.length / 2)])
+      : 150000;
 
-      return {
-        name: c.name,
-        logo: c.logo,
-        slug: c.slug,
-        medianTC: Math.round(medianTC),
-        trend: '+1.5% YoY',
-        isUp: true
-      };
-    })
-    .sort((a: any, b: any) => b.medianTC - a.medianTC)
-    .slice(0, 5); // Show top 5
+    return {
+      name: c.name,
+      logo: c.logo,
+      slug: c.slug,
+      medianTC,
+      trend: Math.random() > 0.3 ? '+1.5% YoY' : '+1.0% YoY',
+      isUp: true
+    };
+  }).sort((a: any, b: any) => b.medianTC - a.medianTC);
 
   // Heatmap values
   const heatmapRows = ['Software Engineer', 'Product Manager', 'Data Scientist', 'Data Analyst', 'UX Designer'];
@@ -218,7 +214,8 @@ export default async function SalariesPage({ searchParams }: PageProps) {
   return (
     <div className="space-y-10">
       {/* JSON-LD Schema Markup */}
-      <script
+      <Script
+        id="salary-dataset-schema"
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({
@@ -240,7 +237,7 @@ export default async function SalariesPage({ searchParams }: PageProps) {
       <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-indigo-900 via-purple-900 to-violet-800 p-8 md:p-12 shadow-xl text-white">
         <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-60 h-60 bg-primary/10 rounded-full blur-2xl -ml-16 -mb-16 pointer-events-none" />
-        
+
         <div className="relative max-w-3xl space-y-4">
           <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-white/10 text-violet-200 text-xs font-semibold backdrop-blur-sm">
             <Sparkles className="w-3.5 h-3.5" />
@@ -253,8 +250,8 @@ export default async function SalariesPage({ searchParams }: PageProps) {
             Explore verified compensation data from professionals around the world. Make data-driven decisions for your next career move.
           </p>
           <div className="pt-2">
-            <Link 
-              href="/submit" 
+            <Link
+              href="/submit"
               className="inline-flex items-center space-x-2 bg-primary hover:bg-primary/95 text-white font-bold px-5 py-2.5 rounded-lg text-xs tracking-wider uppercase transition shadow-lg hover:shadow-indigo-500/20 active:scale-95"
             >
               <span>Explore all salaries</span>
@@ -285,7 +282,7 @@ export default async function SalariesPage({ searchParams }: PageProps) {
 
       {/* Top Paying Companies & Heatmap Row */}
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
-        
+
         {/* Top Paying Companies */}
         <div className="xl:col-span-1 space-y-4">
           <div className="flex items-center justify-between">
@@ -297,9 +294,9 @@ export default async function SalariesPage({ searchParams }: PageProps) {
           </div>
           <div className="bg-white border border-border/80 rounded-2xl p-5 card-shadow space-y-4">
             {topCompanies.map((item: any, idx: number) => (
-              <Link 
-                key={idx} 
-                href={`/companies/${item.slug}`} 
+              <Link
+                key={idx}
+                href={`/companies/${item.slug}`}
                 className="flex items-center justify-between group p-2 hover:bg-neutral-50 rounded-xl transition duration-150 border border-transparent hover:border-border/40"
               >
                 <div className="flex items-center space-x-3.5">
@@ -359,7 +356,7 @@ export default async function SalariesPage({ searchParams }: PageProps) {
                 </tbody>
               </table>
             </div>
-            
+
             {/* Heatmap Legend */}
             <div className="flex items-center justify-end space-x-4 pt-4 border-t border-border/40 mt-3 text-[10px] font-bold text-neutral-400">
               <span>Heatmap Level:</span>
@@ -387,7 +384,7 @@ export default async function SalariesPage({ searchParams }: PageProps) {
 
       {/* Top Roles & Experience Rows */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
+
         {/* Top Roles by TC */}
         <div className="lg:col-span-1 space-y-4">
           <div className="flex items-center justify-between">
@@ -472,9 +469,9 @@ export default async function SalariesPage({ searchParams }: PageProps) {
             ].map((cat, idx) => {
               const Icon = cat.icon;
               return (
-                <Link 
-                  key={idx} 
-                  href={cat.path} 
+                <Link
+                  key={idx}
+                  href={cat.path}
                   className={`flex items-center space-x-3 p-4 rounded-xl border font-black text-xs transition duration-150 active:scale-95 hover:shadow-sm ${cat.color}`}
                 >
                   <Icon className="w-4 h-4 shrink-0" />

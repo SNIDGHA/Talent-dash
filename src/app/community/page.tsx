@@ -2,7 +2,7 @@ import Link from 'next/link';
 import CompanyLogo from '@/components/features/CompanyLogo';
 import { Users, MessageSquare, ArrowUpRight, Sparkles, Flame, Plus, TrendingUp, Star, Award, Compass, MessageCircle, ChevronRight, Eye } from 'lucide-react';
 import React from 'react';
-
+export const runtime = "edge";
 export const dynamic = 'force-dynamic';
 
 export default async function CommunityPage() {
@@ -163,7 +163,7 @@ export default async function CommunityPage() {
       <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-indigo-900 via-purple-900 to-violet-800 p-8 md:p-12 shadow-xl text-white">
         <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-60 h-60 bg-primary/10 rounded-full blur-2xl -ml-16 -mb-16 pointer-events-none" />
-        
+
         <div className="relative max-w-3xl space-y-4">
           <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-white/10 text-violet-200 text-xs font-semibold backdrop-blur-sm">
             <Users className="w-3.5 h-3.5" />
@@ -196,7 +196,7 @@ export default async function CommunityPage() {
                     <img src={disc.logo} alt={disc.company} className="w-5 h-5 object-contain" />
                   ) : (
                     <div className="w-5 h-5 bg-neutral-100 rounded flex items-center justify-center text-[8px] font-black text-neutral-500 border border-border">
-                      {disc.company.slice(0,2).toUpperCase()}
+                      {disc.company.slice(0, 2).toUpperCase()}
                     </div>
                   )}
                   <span className={`text-[9px] font-bold px-2 py-0.5 rounded border ${disc.tagColor}`}>
@@ -224,7 +224,7 @@ export default async function CommunityPage() {
 
       {/* 3-Column Dashboard */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
+
         {/* Column 1: Trending Now */}
         <div className="space-y-4">
           <h3 className="text-sm font-black text-neutral-700 uppercase tracking-wider flex items-center space-x-2">
@@ -276,12 +276,11 @@ export default async function CommunityPage() {
                       <span className="text-[10px] font-bold text-neutral-400 block mt-0.5">{comm.members}</span>
                     </div>
                   </div>
-                  <button 
-                    className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition border active:scale-95 ${
-                      comm.joined 
-                        ? 'bg-neutral-50 border-neutral-200 text-neutral-400 cursor-default' 
-                        : 'bg-primary border-primary hover:bg-primary/95 text-white shadow-sm'
-                    }`}
+                  <button
+                    className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase transition border active:scale-95 ${comm.joined
+                      ? 'bg-neutral-50 border-neutral-200 text-neutral-400 cursor-default'
+                      : 'bg-primary border-primary hover:bg-primary/95 text-white shadow-sm'
+                      }`}
                   >
                     {comm.joined ? 'Joined' : 'Join'}
                   </button>

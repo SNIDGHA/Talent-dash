@@ -2,7 +2,7 @@ import Link from 'next/link';
 import CompanyLogo from '@/components/features/CompanyLogo';
 import { Star, ClipboardList, ArrowUpRight, HelpCircle, Sparkles, Code, Layout, User, ChevronRight, MessageSquare, Plus, ArrowUp } from 'lucide-react';
 import React from 'react';
-
+export const runtime = "edge";
 export const dynamic = 'force-dynamic';
 
 export default async function InterviewsHubPage() {
@@ -140,7 +140,7 @@ export default async function InterviewsHubPage() {
       <div className="relative rounded-2xl overflow-hidden bg-gradient-to-br from-indigo-900 via-purple-900 to-violet-800 p-8 md:p-12 shadow-xl text-white">
         <div className="absolute top-0 right-0 w-80 h-80 bg-white/5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-60 h-60 bg-primary/10 rounded-full blur-2xl -ml-16 -mb-16 pointer-events-none" />
-        
+
         <div className="relative max-w-3xl space-y-4">
           <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-white/10 text-violet-200 text-xs font-semibold backdrop-blur-sm">
             <ClipboardList className="w-3.5 h-3.5" />
@@ -204,7 +204,7 @@ export default async function InterviewsHubPage() {
 
       {/* Roles & Topics Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
+
         {/* Browse Questions by Role */}
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
@@ -249,11 +249,11 @@ export default async function InterviewsHubPage() {
         <div className="lg:col-span-1 space-y-4">
           <h2 className="text-sm font-black text-neutral-700 uppercase tracking-wider">Trending interview topics</h2>
           <div className="bg-white border border-border/80 rounded-2xl p-5 card-shadow flex flex-col justify-between min-h-[310px]">
-            
+
             <div className="grid grid-cols-2 gap-3 flex-1">
               {topics.map((t, idx) => (
-                <div 
-                  key={idx} 
+                <div
+                  key={idx}
                   className="p-3 bg-neutral-50 border border-neutral-200/80 hover:border-primary/45 rounded-xl cursor-pointer transition flex flex-col justify-between"
                 >
                   <h4 className="text-[11px] font-extrabold text-neutral-800 leading-snug">{t.name}</h4>

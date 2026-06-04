@@ -7,6 +7,8 @@ import { Building, MapPin, Users, Calendar, ArrowUpRight, Search, Sparkles } fro
 import React from 'react';
 import Script from 'next/script';
 import IndustrySelect from '@/components/features/IndustrySelect';
+
+export const runtime = "edge";
 export const dynamic = 'force-dynamic';
 
 interface PageProps {

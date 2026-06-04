@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma, serializeBigInt } from '@/lib/db';
 import { CONVERSION_RATES } from '@/lib/config';
-
+export const runtime = "edge";
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
@@ -74,7 +74,7 @@ export async function GET(request: NextRequest) {
       // Convert record 2 to USD, then to record 1's currency
       const r2Rate = CONVERSION_RATES[record2.currency] || 1.0;
       const r1Rate = CONVERSION_RATES[record1.currency] || 1.0;
-      
+
       base2Converted = (r2Base / r2Rate) * r1Rate;
       bonus2Converted = (r2Bonus / r2Rate) * r1Rate;
       stock2Converted = (r2Stock / r2Rate) * r1Rate;

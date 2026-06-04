@@ -9,7 +9,7 @@ import React from 'react';
 import { getMockCompanyData } from '@/lib/mockCompanyData';
 import { GET as getCompanyApi } from '@/app/api/companies/[slug]/route';
 import { NextRequest } from 'next/server';
-
+export const runtime = "edge";
 export const revalidate = 3600; // Cache and revalidate company page hourly (ISR)
 export const dynamicParams = true; // Dynamically generate pages for new company slugs on demand
 
