@@ -1,0 +1,7 @@
+name = "talent-dash"
+compatibility_date = "2024-12-30"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY = "pk_test_cG9zaXRpdmUtY29kLTMxLmNsZXJrLmFjY291bnRzLmRldiQ"
+# Additional environment variables like DATABASE_URL or R2 keys should be configured in the Cloudflare Pages dashboard

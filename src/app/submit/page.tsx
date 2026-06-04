@@ -64,7 +64,7 @@ export default function SubmitSalary() {
         if (data.errors) {
           setErrors(data.errors);
         } else {
-          setErrors([{ field: 'global', message: data.error || 'Failed to submit.' }]);
+          setErrors([{ field: 'global', message: data.message || 'Failed to submit.' }]);
         }
       } else {
         setSuccess(true);

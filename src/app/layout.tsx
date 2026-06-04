@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
-import { Inter, JetBrains_Mono } from 'next/font/google';
-import Navbar from 'src/components/Navbar';
+import { Inter } from 'next/font/google';
+import { ClerkProvider } from '@clerk/nextjs';
+import ConditionalNavbar from '@/components/ConditionalNavbar';
+import ConditionalFooter from '@/components/ConditionalFooter';
+import ConditionalMain from '@/components/ConditionalMain';
 import './globals.css';
 
 const inter = Inter({
@@ -8,15 +11,29 @@ const inter = Inter({
   subsets: ['latin'],
 });
 
-const jetbrainsMono = JetBrains_Mono({
-  variable: '--font-mono',
-  subsets: ['latin'],
-});
-
 export const metadata: Metadata = {
-  title: 'CompIntel — Compensation Intelligence Platform',
-  description: 'Track, normalize, and visualize tech salaries based on real leveling mappings. Find total compensation (base salary, equity, and bonuses) across leading firms.',
-  keywords: 'levels fyi clone, software engineering salaries, base salary, equity, stock grants, tech compensation, levels mapping',
+  title: 'TalentDash — Career Intelligence and Tech Salary Database',
+  description: 'Demystify software engineering, product manager, and data analyst compensation. Search verified salaries, base pay, and stock grants across top Indian and global tech firms.',
+  keywords: [
+    'levels fyi india',
+    'tech salaries india',
+    'software engineer salary amazon',
+    'software engineer salary google',
+    'compensation intelligence',
+    'levels mapping',
+    'talentdash'
+  ],
+  metadataBase: new URL(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000'),
+  alternates: {
+    canonical: '/salaries',
+  },
+  openGraph: {
+    title: 'TalentDash — Tech Compensation and Salary Database',
+    description: 'Vetted, level-mapped software engineering and tech salaries in Bengaluru and worldwide.',
+    url: '/salaries',
+    siteName: 'TalentDash',
+    type: 'website',
+  }
 };
 
 export default function RootLayout({
@@ -25,27 +42,26 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased dark`}
-    >
-      <body className="min-h-full flex flex-col bg-background text-slate-100 font-sans selection:bg-emerald-500/20 selection:text-emerald-300">
-        {/* Navigation bar */}
-        <Navbar />
+    <ClerkProvider>
+      <html
+        lang="en"
+        className={`${inter.variable} h-full antialiased`}
+      >
+        <body className="min-h-full flex flex-col bg-background text-neutral-800 font-sans selection:bg-primary/10 selection:text-primary">
+          {/* Conditionally rendered — hidden on landing page */}
+          <ConditionalNavbar />
 
-        {/* Content Area */}
-        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10">
-          {children}
-        </main>
+          {/* Content Area — landing page manages its own padding/layout */}
+          <main className="flex-1">
+            <ConditionalMain>
+              {children}
+            </ConditionalMain>
+          </main>
 
-        {/* Footer */}
-        <footer className="border-t border-slate-900/60 bg-slate-950/20 py-8 text-center text-xs text-slate-500">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <p>© {new Date().getFullYear()} CompIntel. Real Leveling. Structured Data. Open Sourced.</p>
-            <p className="mt-1 text-slate-650">A premium, highly secure compensation intelligence experiment built with Next.js, Prisma and TailwindCSS.</p>
-          </div>
-        </footer>
-      </body>
-    </html>
+          {/* Conditionally rendered footer — hidden on landing page */}
+          <ConditionalFooter />
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }

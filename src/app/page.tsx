@@ -1,565 +1,392 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  Legend, LineChart, Line, AreaChart, Area
-} from 'recharts';
-import { 
-  Search, Briefcase, MapPin, Award, DollarSign, ArrowUpDown, 
-  TrendingUp, Users, ShieldAlert, Sparkles, Filter, RotateCcw
-} from 'lucide-react';
 import Link from 'next/link';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { SignInButton, SignUpButton, UserButton, useAuth } from '@clerk/nextjs';
+import {
+  Search, MapPin, Briefcase, Star, Building2, BarChart2,
+  MessageSquare, ClipboardList, ShoppingBag, Scale, Wrench,
+  Gift, Shield, Users, Lock, ArrowRight, ChevronDown,
+  TrendingUp, Heart
+} from 'lucide-react';
 
-interface Company {
-  id: string;
-  name: string;
-  standardizedName: string;
-  sector: string;
-  logoUrl: string;
-}
+const trendingSearches = [
+  'Software Engineer',
+  'Data Scientist',
+  'Product Manager',
+  'Marketing Manager',
+  'Remote Jobs',
+];
 
-interface SalaryRecord {
-  id: string;
-  companyId: string;
-  company: Company;
-  title: string;
-  level: string;
-  standardLevelTier: string;
-  location: string;
-  baseSalary: number;
-  stockGrant: number;
-  bonus: number;
-  totalCompensation: number;
-  createdAt: string;
-}
+const trustStats = [
+  { icon: Shield, label: 'Verified & Trusted', sub: 'Real data. Real people.' },
+  { icon: Users, label: '10M+ Users', sub: 'Across the globe' },
+  { icon: Building2, label: '500K+ Companies', sub: 'Researched & reviewed' },
+  { icon: Lock, label: '100% Free', sub: 'No hidden charges' },
+];
 
-interface AnalyticsData {
-  byTier: Array<{
-    tier: string;
-    displayName: string;
-    medianTC: number;
-    medianBase: number;
-    medianStock: number;
-    medianBonus: number;
-    count: number;
-  }>;
-  byCompany: Array<{
-    company: string;
-    medianTC: number;
-    medianBase: number;
-    medianStock: number;
-    medianBonus: number;
-    count: number;
-  }>;
-  byLocation: Array<{
-    location: string;
-    medianTC: number;
-    count: number;
-  }>;
-  stats: {
-    avgTC: number;
-    count: number;
-    topCompany: string;
-  };
-}
+const subNavItems = [
+  { name: 'Companies', path: '/companies', icon: Building2, hasDropdown: true },
+  { name: 'Salaries', path: '/salaries', icon: BarChart2 },
+  { name: 'Reviews', path: '/reviews', icon: MessageSquare },
+  { name: 'Interviews', path: '/interviews', icon: ClipboardList },
+  { name: 'Jobs', path: '/jobs', icon: ShoppingBag },
+  { name: 'Forum', path: '/community', icon: Users },
+  { name: 'Offers', path: '/compare', icon: Gift },
+  { name: 'Tools', path: '/tools', icon: Wrench, hasDropdown: true },
+  { name: 'Brands', path: '/workplace-index', icon: Star, hasDropdown: true },
+];
 
-export default function Dashboard() {
-  const [salaries, setSalaries] = useState<SalaryRecord[]>([]);
-  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
-  
-  // Filtering & Sorting State
-  const [search, setSearch] = useState('');
-  const [selectedCompany, setSelectedCompany] = useState('');
-  const [selectedTier, setSelectedTier] = useState('');
-  const [selectedLoc, setSelectedLoc] = useState('');
-  const [sortBy, setSortBy] = useState('totalCompensation');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  
-  const [loading, setLoading] = useState(true);
-  const [mounted, setMounted] = useState(false);
+const searchTabs = [
+  { id: 'salaries', label: 'Salaries', icon: BarChart2 },
+  { id: 'reviews', label: 'Reviews', icon: Star },
+  { id: 'interviews', label: 'Interviews', icon: ClipboardList },
+  { id: 'forum', label: 'Forum', icon: Users },
+];
 
-  // Lists for dropdown options
-  const [companies, setCompanies] = useState<string[]>([]);
-  const [locations, setLocations] = useState<string[]>([]);
+export default function LandingPage() {
+  const router = useRouter();
+  const { isSignedIn, isLoaded } = useAuth();
 
-  useEffect(() => {
-    setMounted(true);
-    fetchData();
-  }, []);
+  const [activeTab, setActiveTab] = useState('salaries');
+  const [jobQuery, setJobQuery] = useState('');
+  const [location, setLocation] = useState('');
+  const [experience, setExperience] = useState('');
 
-  // Refetch when filters or sorts change
-  useEffect(() => {
-    if (mounted) {
-      fetchSalaries();
-    }
-  }, [search, selectedCompany, selectedTier, selectedLoc, sortBy, sortOrder]);
+  const handleSearch = () => {
+    const params = new URLSearchParams();
+    if (jobQuery) params.set('company', jobQuery);
+    if (location) params.set('location', location);
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      await Promise.all([fetchSalaries(), fetchAnalytics()]);
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+    const tabRoutes: Record<string, string> = {
+      salaries: '/salaries',
+      reviews: '/reviews',
+      interviews: '/interviews',
+      forum: '/community',
+    };
 
-  const fetchSalaries = async () => {
-    try {
-      const params = new URLSearchParams();
-      if (search) params.append('search', search);
-      if (selectedCompany) params.append('company', selectedCompany);
-      if (selectedTier) params.append('tier', selectedTier);
-      if (selectedLoc) params.append('location', selectedLoc);
-      params.append('sortBy', sortBy);
-      params.append('sortOrder', sortOrder);
-
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
-      const res = await fetch(`${apiUrl}/api/salaries?${params.toString()}`);
-      if (res.ok) {
-        const data = await res.json();
-        setSalaries(data);
-
-        // Derive list of unique companies and locations for dropdowns on initial fetch
-        if (!selectedCompany && !selectedLoc && !search && !selectedTier) {
-          const uniqueComps = Array.from(new Set(data.map((s: SalaryRecord) => s.company.name))) as string[];
-          const uniqueLocs = Array.from(new Set(data.map((s: SalaryRecord) => s.location))) as string[];
-          setCompanies(uniqueComps.sort());
-          setLocations(uniqueLocs.sort());
-        }
-      }
-    } catch (error) {
-      console.error('Failed to fetch salaries:', error);
-    }
-  };
-
-  const fetchAnalytics = async () => {
-    try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
-      const res = await fetch(`${apiUrl}/api/analytics`);
-      if (res.ok) {
-        const data = await res.json();
-        setAnalytics(data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch analytics:', error);
-    }
-  };
-
-  const resetFilters = () => {
-    setSearch('');
-    setSelectedCompany('');
-    setSelectedTier('');
-    setSelectedLoc('');
-    setSortBy('totalCompensation');
-    setSortOrder('desc');
-  };
-
-  const toggleSort = (field: string) => {
-    if (sortBy === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortBy(field);
-      setSortOrder('desc');
-    }
-  };
-
-  const formatCurrency = (val: number) => {
-    if (val >= 1000) {
-      return `$${(val / 1000).toFixed(0)}k`;
-    }
-    return `$${val.toLocaleString()}`;
-  };
-
-  const getTierColor = (tier: string) => {
-    switch (tier) {
-      case 'JUNIOR': return 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/25';
-      case 'MID': return 'bg-sky-500/10 text-sky-400 border border-sky-500/25';
-      case 'SENIOR': return 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 glow-emerald';
-      case 'STAFF': return 'bg-indigo-500/10 text-indigo-400 border border-indigo-500/25';
-      case 'PRINCIPAL': return 'bg-violet-500/10 text-violet-400 border border-violet-500/25 glow-indigo';
-      default: return 'bg-slate-500/10 text-slate-400 border border-slate-550/25';
-    }
+    const base = tabRoutes[activeTab] || '/salaries';
+    router.push(`${base}${params.toString() ? `?${params.toString()}` : ''}`);
   };
 
   return (
-    <div className="space-y-10">
-      {/* Hero Section */}
-      <div className="relative text-center sm:text-left py-6 sm:py-8">
-        <div className="flex items-center justify-center sm:justify-start space-x-2 text-emerald-400 text-xs sm:text-sm font-semibold tracking-wider uppercase mb-3">
-          <Sparkles className="w-4 h-4 animate-pulse" />
-          <span>Real-time Levels-first Compensation Data</span>
-        </div>
-        <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-white mb-4">
-          Demystifying <span className="bg-gradient-to-r from-emerald-400 via-teal-300 to-indigo-400 bg-clip-text text-transparent">Tech Compensation</span>
-        </h1>
-        <p className="max-w-3xl text-base sm:text-lg text-slate-400 leading-relaxed">
-          Standardized leveling maps let you compare software engineering, data science, and product roles apples-to-apples. Search verified salaries and discover real base, stock, and bonus ratios.
-        </p>
-      </div>
+    <div className="min-h-screen flex flex-col bg-white">
 
-      {/* Metrics Banner */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Stat 1 */}
-        <div className="glass-panel glass-panel-hover rounded-2xl p-6 flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Average Total Pay</span>
-            <div className="text-3xl font-black text-emerald-400">
-              {analytics ? formatCurrency(analytics.stats.avgTC) : '$0'}
+      {/* ── TOP HEADER ──────────────────────────────────────────────── */}
+      <header className="border-b border-neutral-100 bg-white sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-14">
+          {/* Logo */}
+          <Link href="/" className="flex items-center space-x-2.5 group">
+            <div className="w-8 h-8 rounded-lg bg-emerald-600 flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
+              <span className="text-white font-black text-base leading-none">D</span>
             </div>
-            <div className="flex items-center text-xs text-slate-450 space-x-1.5">
-              <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Annualized average</span>
-            </div>
-          </div>
-          <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 border border-emerald-500/20">
-            <DollarSign className="w-6 h-6" />
-          </div>
-        </div>
-
-        {/* Stat 2 */}
-        <div className="glass-panel glass-panel-hover rounded-2xl p-6 flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Verified Datapoints</span>
-            <div className="text-3xl font-black text-indigo-450">
-              {analytics ? analytics.stats.count : 0}
-            </div>
-            <div className="flex items-center text-xs text-slate-450 space-x-1.5">
-              <Users className="w-3.5 h-3.5 text-indigo-450" />
-              <span>Submissions vetted</span>
-            </div>
-          </div>
-          <div className="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center text-indigo-450 border border-indigo-500/20">
-            <Users className="w-6 h-6" />
-          </div>
-        </div>
-
-        {/* Stat 3 */}
-        <div className="glass-panel glass-panel-hover rounded-2xl p-6 flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Highest Median Comp</span>
-            <div className="text-xl sm:text-2xl font-black text-violet-400 leading-tight">
-              {analytics ? analytics.stats.topCompany.split(' ')[0] : 'N/A'}
-            </div>
-            <div className="flex items-center text-xs text-slate-450 space-x-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-violet-400" />
-              <span>{analytics ? analytics.stats.topCompany.substring(analytics.stats.topCompany.indexOf('(')) : 'Top paying standard'}</span>
-            </div>
-          </div>
-          <div className="w-12 h-12 rounded-xl bg-violet-500/10 flex items-center justify-center text-violet-400 border border-violet-500/20">
-            <Sparkles className="w-6 h-6" />
-          </div>
-        </div>
-      </div>
-
-      {/* Visual Analytics Block */}
-      {mounted && analytics && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {/* Chart 1: Stacked Bar Chart */}
-          <div className="glass-panel rounded-2xl p-6 flex flex-col h-[400px]">
-            <h3 className="text-sm font-bold text-slate-350 mb-1 flex items-center space-x-1.5">
-              <Award className="w-4 h-4 text-emerald-450" />
-              <span>Median Compensation Components by Level Tier</span>
-            </h3>
-            <span className="text-xs text-slate-500 mb-6">Standardized cross-company leveling (Stock annualized over 4 years)</span>
-            <div className="flex-1 w-full min-h-0">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={analytics.byTier}
-                  margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" opacity={0.3} />
-                  <XAxis dataKey="displayName" stroke="#64748b" fontSize={11} tickLine={false} />
-                  <YAxis 
-                    stroke="#64748b" 
-                    fontSize={10} 
-                    tickFormatter={(val) => `$${val / 1000}k`}
-                    tickLine={false}
-                  />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', color: '#f8fafc' }}
-                    formatter={(value: any) => [formatCurrency(value as number), '']}
-                  />
-                  <Legend verticalAlign="top" height={36} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '11px', color: '#94a3b8' }} />
-                  <Bar name="Base Salary" dataKey="medianBase" stackId="a" fill="#10b981" radius={[0, 0, 0, 0]} />
-                  <Bar name="Stock Grant (Vested/Yr)" dataKey="medianStock" stackId="a" fill="#6366f1" radius={[0, 0, 0, 0]} />
-                  <Bar name="Annual Bonus" dataKey="medianBonus" stackId="a" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* Chart 2: Area Curve of Top Companies */}
-          <div className="glass-panel rounded-2xl p-6 flex flex-col h-[400px]">
-            <h3 className="text-sm font-bold text-slate-350 mb-1 flex items-center space-x-1.5">
-              <TrendingUp className="w-4 h-4 text-indigo-400" />
-              <span>Compensation Leaderboard (Median TC)</span>
-            </h3>
-            <span className="text-xs text-slate-500 mb-6">Median Total Compensation comparing standard tech employers</span>
-            <div className="flex-1 w-full min-h-0">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart
-                  data={analytics.byCompany}
-                  margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                >
-                  <defs>
-                    <linearGradient id="colorTC" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#6366f1" stopOpacity={0.2}/>
-                      <stop offset="95%" stopColor="#6366f1" stopOpacity={0.0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" opacity={0.3} />
-                  <XAxis dataKey="company" stroke="#64748b" fontSize={11} tickLine={false} />
-                  <YAxis 
-                    stroke="#64748b" 
-                    fontSize={10} 
-                    tickFormatter={(val) => `$${val / 1000}k`}
-                    tickLine={false}
-                  />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', borderRadius: '12px', color: '#f8fafc' }}
-                    formatter={(value: any) => [formatCurrency(value as number), 'Median TC']}
-                  />
-                  <Area type="monotone" dataKey="medianTC" stroke="#6366f1" strokeWidth={2.5} fillOpacity={1} fill="url(#colorTC)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Main Database Table Area */}
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <h2 className="text-2xl font-bold tracking-tight text-white flex items-center space-x-2">
-            <span>Verified Salary Datapoints</span>
-            <span className="text-xs bg-slate-800 text-slate-400 px-2.5 py-1 rounded-full font-semibold border border-slate-700">
-              {salaries.length} records found
-            </span>
-          </h2>
-
-          <Link
-            href="/submit"
-            className="sm:hidden w-full text-center py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-slate-950 font-bold text-sm"
-          >
-            Submit Salary +
+            <span className="text-lg font-black text-neutral-900 tracking-tight">TalentDash</span>
           </Link>
-        </div>
 
-        {/* Toolbar & Filter Bar */}
-        <div className="glass-panel rounded-2xl p-5 space-y-4">
-          {/* Row 1: Search & Reset */}
-          <div className="flex flex-col md:flex-row items-center gap-4">
-            <div className="relative flex-1 w-full">
-              <Search className="absolute left-4 top-3.5 h-4.5 w-4.5 text-slate-500" />
-              <input
-                type="text"
-                placeholder="Search by company, title, location, or level..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full bg-slate-950/45 border border-slate-800/80 rounded-xl pl-11 pr-4 py-3 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:border-indigo-500/60 focus:ring-1 focus:ring-indigo-500/60 transition"
-              />
-            </div>
-            
-            {(selectedCompany || selectedTier || selectedLoc || search) && (
-              <button
-                onClick={resetFilters}
-                className="w-full md:w-auto flex items-center justify-center space-x-1.5 px-4.5 py-3 rounded-xl border border-slate-800 bg-slate-900/40 text-slate-400 text-sm font-semibold hover:text-slate-200 hover:bg-slate-800/40 transition active:scale-95 cursor-pointer"
-              >
-                <RotateCcw className="w-4 h-4" />
-                <span>Reset Filters</span>
-              </button>
+          {/* Right: auth + extra actions */}
+          <div className="flex items-center space-x-2">
+            {isLoaded && (
+              isSignedIn ? (
+                /* Signed in: show avatar + go to app */
+                <div className="flex items-center space-x-3">
+                  <Link
+                    href="/companies"
+                    className="inline-flex items-center space-x-1.5 px-4 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs transition shadow-sm"
+                  >
+                    <span>Go to Dashboard</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                  <UserButton
+                    appearance={{
+                      elements: { avatarBox: 'w-8 h-8 rounded-full border-2 border-emerald-200 shadow-sm' }
+                    }}
+                  />
+                </div>
+              ) : (
+                /* Signed out: show log in + sign up */
+                <>
+                  <SignInButton mode="modal" forceRedirectUrl="/companies">
+                    <button
+                      id="landing-login-btn"
+                      className="flex items-center space-x-1.5 px-4 py-1.5 rounded-full text-neutral-700 hover:bg-neutral-50 font-semibold text-sm transition border border-neutral-200"
+                    >
+                      <ArrowRight className="w-3.5 h-3.5 text-neutral-500 rotate-180" />
+                      <span>Log in</span>
+                    </button>
+                  </SignInButton>
+                  <SignUpButton mode="modal" forceRedirectUrl="/companies">
+                    <button
+                      id="landing-signup-btn"
+                      className="px-4 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm transition shadow-sm active:scale-95"
+                    >
+                      Sign up
+                    </button>
+                  </SignUpButton>
+                  <div className="hidden sm:flex items-center space-x-1 text-neutral-600 border-l border-neutral-200 pl-2 ml-1">
+                    <button className="flex items-center space-x-1.5 px-3 py-1.5 hover:bg-neutral-50 rounded-full text-sm font-medium transition">
+                      <Heart className="w-3.5 h-3.5 text-rose-500" />
+                      <span>Contribute</span>
+                    </button>
+                    <button className="flex items-center space-x-1.5 px-3 py-1.5 hover:bg-neutral-50 rounded-full text-sm font-medium transition">
+                      <Briefcase className="w-3.5 h-3.5 text-neutral-500" />
+                      <span>Employer</span>
+                    </button>
+                  </div>
+                </>
+              )
             )}
           </div>
+        </div>
 
-          {/* Row 2: Select Dropdowns */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            {/* Filter by Company */}
-            <div className="flex flex-col space-y-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center space-x-1">
-                <Briefcase className="w-3 h-3" />
-                <span>Company</span>
-              </label>
-              <select
-                value={selectedCompany}
-                onChange={(e) => setSelectedCompany(e.target.value)}
-                className="w-full bg-slate-950/45 border border-slate-800/80 rounded-xl px-3 py-2.5 text-sm text-slate-300 focus:outline-none focus:border-indigo-500/60 transition cursor-pointer"
-              >
-                <option value="">All Companies</option>
-                {companies.map(c => (
-                  <option key={c} value={c}>{c}</option>
-                ))}
-              </select>
+        {/* ── SECONDARY NAV ─────────────────────────────────────────── */}
+        <nav className="border-t border-neutral-100 bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center space-x-1 overflow-x-auto scrollbar-hide h-11">
+              {subNavItems.map((item) => (
+                <Link
+                  key={item.path}
+                  href={item.path}
+                  className="flex items-center space-x-1 px-3 py-2 text-sm font-medium text-neutral-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg whitespace-nowrap transition group"
+                >
+                  <span>{item.name}</span>
+                  {item.hasDropdown && <ChevronDown className="w-3.5 h-3.5 text-neutral-400 group-hover:text-emerald-600" />}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </nav>
+      </header>
+
+      {/* ── HERO SECTION ────────────────────────────────────────────── */}
+      <section className="relative bg-gradient-to-b from-emerald-50/60 via-white to-white flex-1 flex flex-col items-center pt-16 pb-20 px-4">
+        {/* Background blobs */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute -top-16 -left-20 w-96 h-96 bg-emerald-100/40 rounded-full blur-3xl" />
+          <div className="absolute top-32 -right-16 w-72 h-72 bg-emerald-50/60 rounded-full blur-2xl" />
+        </div>
+
+        <div className="relative z-10 w-full max-w-3xl flex flex-col items-center text-center space-y-5">
+
+          {/* Headline */}
+          <h1 className="text-5xl sm:text-6xl md:text-7xl font-black tracking-tight text-neutral-900 leading-none">
+            Explore.&nbsp;Compare.&nbsp;Grow.
+          </h1>
+          <p className="text-base sm:text-lg text-neutral-500 font-medium max-w-lg leading-relaxed">
+            Explore salaries, read real reviews, prepare for interviews,<br className="hidden sm:block" />
+            and find the right opportunities — all in one place.
+          </p>
+
+          {/* Search Card */}
+          <div className="w-full max-w-2xl bg-white border border-neutral-200 rounded-2xl shadow-lg overflow-hidden mt-4">
+            {/* Tabs */}
+            <div className="flex border-b border-neutral-100">
+              {searchTabs.map((tab) => {
+                const Icon = tab.icon;
+                const active = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex items-center space-x-1.5 px-5 py-3.5 text-sm font-semibold transition-all ${
+                      active
+                        ? 'text-emerald-700 border-b-2 border-emerald-600 -mb-px bg-emerald-50/50'
+                        : 'text-neutral-500 hover:text-neutral-700 hover:bg-neutral-50'
+                    }`}
+                  >
+                    <Icon className={`w-4 h-4 ${active ? 'text-emerald-600' : 'text-neutral-400'}`} />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
             </div>
 
-            {/* Filter by Level Tier */}
-            <div className="flex flex-col space-y-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center space-x-1">
-                <Award className="w-3 h-3" />
-                <span>Standard Level</span>
-              </label>
-              <select
-                value={selectedTier}
-                onChange={(e) => setSelectedTier(e.target.value)}
-                className="w-full bg-slate-950/45 border border-slate-800/80 rounded-xl px-3 py-2.5 text-sm text-slate-300 focus:outline-none focus:border-indigo-500/60 transition cursor-pointer"
-              >
-                <option value="">All Tiers</option>
-                <option value="JUNIOR">Junior (L3 / E3)</option>
-                <option value="MID">Mid-Level (L4 / E4)</option>
-                <option value="SENIOR">Senior (L5 / E5)</option>
-                <option value="STAFF">Staff (L6 / E6)</option>
-                <option value="PRINCIPAL">Principal (L7+)</option>
-              </select>
-            </div>
+            {/* Search inputs */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center divide-y sm:divide-y-0 sm:divide-x divide-neutral-100 p-1">
+              {/* Job title / company */}
+              <div className="flex items-center space-x-2.5 px-4 py-3 flex-1 min-w-0">
+                <Search className="w-4 h-4 text-neutral-400 shrink-0" />
+                <div className="min-w-0">
+                  <input
+                    type="text"
+                    placeholder="Search by job title, skill or company"
+                    value={jobQuery}
+                    onChange={(e) => setJobQuery(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                    className="w-full text-sm text-neutral-800 placeholder:text-neutral-400 focus:outline-none bg-transparent font-medium"
+                  />
+                  <p className="text-[10px] text-neutral-350 mt-0.5 font-medium hidden sm:block">e.g. Software Engineer, Data Analyst</p>
+                </div>
+              </div>
 
-            {/* Filter by Location */}
-            <div className="flex flex-col space-y-1">
-              <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center space-x-1">
-                <MapPin className="w-3 h-3" />
-                <span>Location</span>
-              </label>
-              <select
-                value={selectedLoc}
-                onChange={(e) => setSelectedLoc(e.target.value)}
-                className="w-full bg-slate-950/45 border border-slate-800/80 rounded-xl px-3 py-2.5 text-sm text-slate-300 focus:outline-none focus:border-indigo-500/60 transition cursor-pointer"
-              >
-                <option value="">All Locations</option>
-                {locations.map(l => (
-                  <option key={l} value={l}>{l}</option>
-                ))}
-              </select>
+              {/* Location */}
+              <div className="flex items-center space-x-2.5 px-4 py-3 flex-1 min-w-0">
+                <MapPin className="w-4 h-4 text-neutral-400 shrink-0" />
+                <div className="min-w-0">
+                  <input
+                    type="text"
+                    placeholder="Location"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                    className="w-full text-sm text-neutral-800 placeholder:text-neutral-400 focus:outline-none bg-transparent font-medium"
+                  />
+                  <p className="text-[10px] text-neutral-350 mt-0.5 font-medium hidden sm:block">e.g. New York, Remote</p>
+                </div>
+              </div>
+
+              {/* Experience */}
+              <div className="flex items-center space-x-2.5 px-4 py-3 flex-1 min-w-0">
+                <Briefcase className="w-4 h-4 text-neutral-400 shrink-0" />
+                <div className="min-w-0">
+                  <select
+                    value={experience}
+                    onChange={(e) => setExperience(e.target.value)}
+                    className="w-full text-sm text-neutral-800 focus:outline-none bg-transparent font-medium cursor-pointer"
+                  >
+                    <option value="">Experience</option>
+                    <option value="0-1">0–1 years</option>
+                    <option value="1-3">1–3 years</option>
+                    <option value="3-5">3–5 years</option>
+                    <option value="5-8">5–8 years</option>
+                    <option value="8+">8+ years</option>
+                  </select>
+                  <p className="text-[10px] text-neutral-350 mt-0.5 font-medium hidden sm:block">e.g. 0–2 years</p>
+                </div>
+              </div>
+
+              {/* Search button */}
+              <div className="px-2 py-2 flex items-center justify-end">
+                <button
+                  id="landing-search-btn"
+                  onClick={handleSearch}
+                  className="flex items-center space-x-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-3 rounded-xl text-sm transition shadow-md active:scale-95 whitespace-nowrap"
+                >
+                  <Search className="w-4 h-4" />
+                  <span>Search</span>
+                </button>
+              </div>
             </div>
+          </div>
+
+          {/* Trending searches */}
+          <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+            <span className="text-xs font-semibold text-neutral-400">Trending searches:</span>
+            {trendingSearches.map((term) => (
+              <button
+                key={term}
+                onClick={() => {
+                  setJobQuery(term);
+                  router.push(`/salaries?company=${encodeURIComponent(term)}`);
+                }}
+                className="text-xs font-semibold text-neutral-700 bg-white border border-neutral-200 hover:border-emerald-400 hover:text-emerald-700 hover:bg-emerald-50 px-3 py-1.5 rounded-full transition shadow-sm"
+              >
+                {term}
+              </button>
+            ))}
+          </div>
+
+        </div>
+
+        {/* ── TRUST STATS ───────────────────────────────────────────── */}
+        <div className="relative z-10 w-full max-w-3xl mt-14">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {trustStats.map(({ icon: Icon, label, sub }, i) => (
+              <div
+                key={i}
+                className="flex items-center space-x-3 bg-white/80 border border-neutral-100 rounded-xl px-4 py-3.5 shadow-sm"
+              >
+                <div className="w-8 h-8 rounded-lg bg-emerald-50 border border-emerald-100 flex items-center justify-center shrink-0">
+                  <Icon className="w-4 h-4 text-emerald-600" />
+                </div>
+                <div>
+                  <p className="text-xs font-extrabold text-neutral-800">{label}</p>
+                  <p className="text-[10px] text-neutral-400 font-medium mt-0.5">{sub}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* Salaries Table */}
-        <div className="glass-panel rounded-2xl overflow-hidden border border-slate-800/80">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-950/60 border-b border-slate-800 text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                  <th className="py-4.5 px-6">Company / Role</th>
-                  <th className="py-4.5 px-6">
-                    <button 
-                      onClick={() => toggleSort('level')}
-                      className="flex items-center space-x-1 hover:text-slate-200 transition"
-                    >
-                      <span>Level</span>
-                      <ArrowUpDown className="w-3 h-3" />
-                    </button>
-                  </th>
-                  <th className="py-4.5 px-6">Location</th>
-                  <th className="py-4.5 px-6 hidden sm:table-cell">
-                    <button 
-                      onClick={() => toggleSort('baseSalary')}
-                      className="flex items-center space-x-1 hover:text-slate-200 transition"
-                    >
-                      <span>Base Salary</span>
-                      <ArrowUpDown className="w-3 h-3" />
-                    </button>
-                  </th>
-                  <th className="py-4.5 px-6 hidden md:table-cell">Stock / Yr</th>
-                  <th className="py-4.5 px-6 hidden md:table-cell">Bonus</th>
-                  <th className="py-4.5 px-6">
-                    <button 
-                      onClick={() => toggleSort('totalCompensation')}
-                      className="flex items-center space-x-1 text-slate-200 hover:text-white transition"
-                    >
-                      <span>Total Comp</span>
-                      <ArrowUpDown className="w-3.5 h-3.5 text-emerald-450" />
-                    </button>
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-850/60">
-                {loading ? (
-                  Array.from({ length: 5 }).map((_, i) => (
-                    <tr key={i} className="animate-pulse">
-                      <td className="py-5 px-6">
-                        <div className="h-4 bg-slate-800 rounded w-36 mb-2"></div>
-                        <div className="h-3 bg-slate-800 rounded w-24"></div>
-                      </td>
-                      <td className="py-5 px-6">
-                        <div className="h-5 bg-slate-800 rounded-full w-20"></div>
-                      </td>
-                      <td className="py-5 px-6">
-                        <div className="h-4 bg-slate-800 rounded w-28"></div>
-                      </td>
-                      <td className="py-5 px-6 hidden sm:table-cell">
-                        <div className="h-4 bg-slate-800 rounded w-16"></div>
-                      </td>
-                      <td className="py-5 px-6 hidden md:table-cell">
-                        <div className="h-4 bg-slate-800 rounded w-16"></div>
-                      </td>
-                      <td className="py-5 px-6 hidden md:table-cell">
-                        <div className="h-4 bg-slate-800 rounded w-12"></div>
-                      </td>
-                      <td className="py-5 px-6">
-                        <div className="h-4 bg-slate-800 rounded w-20"></div>
-                      </td>
-                    </tr>
-                  ))
-                ) : salaries.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="py-12 px-6 text-center text-slate-500">
-                      <ShieldAlert className="w-10 h-10 mx-auto text-slate-650 mb-3" />
-                      <p className="text-sm font-semibold text-slate-400">No compensation records match your filters.</p>
-                      <button 
-                        onClick={resetFilters}
-                        className="mt-3 text-xs font-bold text-indigo-400 hover:underline cursor-pointer"
-                      >
-                        Reset search queries
-                      </button>
-                    </td>
-                  </tr>
-                ) : (
-                  salaries.map((s) => (
-                    <tr 
-                      key={s.id} 
-                      className="hover:bg-slate-900/25 transition-colors group text-sm"
-                    >
-                      <td className="py-4 px-6">
-                        <div className="font-extrabold text-slate-100 group-hover:text-emerald-300 transition-colors flex items-center space-x-1.5">
-                          <span>{s.company.name}</span>
-                        </div>
-                        <div className="text-xs text-slate-450 font-medium mt-0.5">{s.title}</div>
-                      </td>
-                      <td className="py-4 px-6">
-                        <div className="font-bold text-slate-300">{s.level}</div>
-                        <span className={`inline-block text-[9px] font-black uppercase px-2 py-0.5 rounded-full mt-1.5 ${getTierColor(s.standardLevelTier)}`}>
-                          {s.standardLevelTier}
-                        </span>
-                      </td>
-                      <td className="py-4 px-6 text-slate-350">
-                        <div className="flex items-center space-x-1 text-slate-300 font-medium">
-                          <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                          <span className="truncate">{s.location}</span>
-                        </div>
-                      </td>
-                      <td className="py-4 px-6 font-semibold text-slate-300 hidden sm:table-cell">
-                        {formatCurrency(s.baseSalary)}
-                      </td>
-                      <td className="py-4 px-6 text-slate-400 hidden md:table-cell">
-                        {s.stockGrant > 0 ? formatCurrency(s.stockGrant / 4) : '—'}
-                      </td>
-                      <td className="py-4 px-6 text-slate-400 hidden md:table-cell">
-                        {s.bonus > 0 ? formatCurrency(s.bonus) : '—'}
-                      </td>
-                      <td className="py-4 px-6">
-                        <div className="font-black text-base text-emerald-450 tracking-tight">
-                          {formatCurrency(s.totalCompensation)}
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+      </section>
+
+      {/* ── EXPLORE SECTION ─────────────────────────────────────────── */}
+      <section className="bg-white border-t border-neutral-100 py-14 px-4">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-10 space-y-2">
+            <h2 className="text-2xl sm:text-3xl font-black text-neutral-900">Everything you need to grow your career</h2>
+            <p className="text-sm text-neutral-500">From salary benchmarks to interview prep — all verified, all free.</p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+            {[
+              { icon: BarChart2, name: 'Salary Data', desc: 'Real verified comp data across roles & levels', href: '/salaries', color: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
+              { icon: Building2, name: 'Companies', desc: 'Explore 500K+ companies with reviews & ratings', href: '/companies', color: 'bg-blue-50 text-blue-700 border-blue-100' },
+              { icon: MessageSquare, name: 'Reviews', desc: 'Anonymous employee reviews from real insiders', href: '/reviews', color: 'bg-purple-50 text-purple-700 border-purple-100' },
+              { icon: ClipboardList, name: 'Interview Prep', desc: 'Questions & tips from people who got the job', href: '/interviews', color: 'bg-amber-50 text-amber-700 border-amber-100' },
+              { icon: Scale, name: 'Offer Comparator', desc: 'Compare multiple offers side-by-side instantly', href: '/compare', color: 'bg-rose-50 text-rose-700 border-rose-100' },
+              { icon: TrendingUp, name: 'Workplace Index', desc: 'Data-driven company rankings, no sponsored spots', href: '/workplace-index', color: 'bg-indigo-50 text-indigo-700 border-indigo-100' },
+            ].map((card, i) => {
+              const Icon = card.icon;
+              return (
+                <Link
+                  key={i}
+                  href={card.href}
+                  className="group flex flex-col space-y-3 p-5 bg-white border border-neutral-100 hover:border-emerald-200 rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200"
+                >
+                  <div className={`w-10 h-10 rounded-xl border flex items-center justify-center ${card.color}`}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-extrabold text-neutral-800 group-hover:text-emerald-700 transition-colors">{card.name}</h3>
+                    <p className="text-xs text-neutral-500 mt-0.5 leading-relaxed">{card.desc}</p>
+                  </div>
+                  <div className="flex items-center text-xs font-bold text-emerald-700 space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span>Explore</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </div>
+                </Link>
+              );
+            })}
           </div>
         </div>
-      </div>
+      </section>
+
+      {/* ── CTA FOOTER ──────────────────────────────────────────────── */}
+      <section className="bg-gradient-to-br from-emerald-700 to-emerald-900 py-14 px-4 text-white text-center">
+        <div className="max-w-xl mx-auto space-y-5">
+          <h2 className="text-2xl sm:text-3xl font-black">Join 10M+ professionals today</h2>
+          <p className="text-emerald-100 text-sm font-medium">Share your salary anonymously and unlock full access to all salary insights, company reviews, and career tools.</p>
+          <div className="flex items-center justify-center gap-3 flex-wrap">
+            <SignUpButton mode="modal" forceRedirectUrl="/companies">
+              <button
+                id="landing-cta-signup-btn"
+                className="px-6 py-3 bg-white hover:bg-neutral-50 text-emerald-800 font-black rounded-xl text-sm transition shadow-md active:scale-95"
+              >
+                Get started — it&apos;s free
+              </button>
+            </SignUpButton>
+            <Link
+              href="/salaries"
+              className="px-6 py-3 bg-emerald-600/40 hover:bg-emerald-600/60 border border-emerald-400/50 text-white font-bold rounded-xl text-sm transition active:scale-95 backdrop-blur-sm"
+            >
+              Browse salaries
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Minimal landing footer */}
+      <footer className="border-t border-neutral-100 bg-white py-5 text-center text-xs text-neutral-400">
+        © {new Date().getFullYear()} TalentDash — Real Leveling. Structured Data.
+        <span className="mx-2">·</span>
+        <Link href="/salaries" className="hover:text-emerald-700 transition">Salaries</Link>
+        <span className="mx-2">·</span>
+        <Link href="/companies" className="hover:text-emerald-700 transition">Companies</Link>
+        <span className="mx-2">·</span>
+        <Link href="/reviews" className="hover:text-emerald-700 transition">Reviews</Link>
+      </footer>
+
     </div>
   );
 }

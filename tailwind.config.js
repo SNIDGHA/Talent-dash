@@ -9,23 +9,18 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        background: '#090d16',
-        foreground: '#f8fafc',
-        card: '#111827',
-        border: '#1f2937',
-        primary: '#10b981',
-        secondary: '#6366f1',
-        muted: '#64748b',
-        slate: {
-          850: '#1e293b80', // Glass panels
-          950: '#030712',
-        },
-        emerald: {
-          450: '#34d399',
-        },
-        rose: {
-          450: '#fb7185',
-        }
+        background: '#F7F7F7',
+        foreground: '#222222',
+        card: '#FFFFFF',
+        border: '#EBEBEB',
+        primary: '#FF5A5F', // Coral Red
+        bodyText: '#484848',
+        mutedText: '#717171',
+        successGreen: '#008A05',
+        warningOrange: '#FFB400',
+        errorRed: '#D93025',
+        hoverSurface: '#F2F2F2',
+        dataBlue: '#0369A1', // Spec blue for Total Comp highlight
       },
       fontFamily: {
         sans: ['var(--font-inter)', 'ui-sans-serif', 'system-ui'],

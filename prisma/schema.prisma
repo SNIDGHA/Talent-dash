@@ -8,40 +8,70 @@ datasource db {
 }
 
 model Company {
-  id               String         @id @default(uuid())
-  name             String         @unique
-  standardizedName String
-  sector           String?
-  logoUrl          String?
-  salaries         SalaryRecord[]
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  id              String   @id @default(uuid())
+  name            String
+  slug            String   @unique
+  normalizedName  String   @unique @map("normalized_name")
+  industry        String
+  headquarters    String
+  foundedYear     Int?     @map("founded_year")
+  headcountRange  String?  @map("headcount_range")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at")
+  logo            String?  @map("logo")
+  salaries        Salary[]
+
+  @@map("companies")
 }
 
-model LevelMap {
+model Salary {
   id                String   @id @default(uuid())
-  companyName       String   // E.g. Google, Meta
-  companyLevel      String   // E.g. L4, E4 (case insensitive normalized)
-  standardLevelTier String   // E.g. JUNIOR, MID, SENIOR, STAFF, PRINCIPAL
-  levelRank         Int      // E.g. 1 for Junior, 2 for Mid, etc.
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-
-  @@unique([companyName, companyLevel])
-}
-
-model SalaryRecord {
-  id                String   @id @default(uuid())
-  companyId         String
+  companyId         String   @map("company_id")
+  role              String
+  level             Level
+  location          String
+  currency          Currency
+  experienceYears   Int      @map("experience_years")
+  baseSalary        BigInt   @map("base_salary")
+  bonus             BigInt   @default(0) @map("bonus")
+  stock             BigInt   @default(0) @map("stock")
+  totalCompensation BigInt   @map("total_compensation")
+  source            Source
+  confidenceScore   Decimal  @map("confidence_score") @db.Decimal(3, 2)
+  isVerified        Boolean  @default(false) @map("is_verified")
+  submittedAt       DateTime @default(now()) @map("submitted_at")
   company           Company  @relation(fields: [companyId], references: [id])
-  title             String   // E.g. Software Engineer, Product Manager
-  level             String   // The raw level submitted by user (e.g. L4, Senior)
-  standardLevelTier String   // Standardized level tier mapped automatically (e.g. MID)
-  location          String   // E.g. San Francisco, CA or Bangalore, India
-  baseSalary        Float    // Annual base salary
-  stockGrant        Float    // 4-year stock grant (RSUs/Equity)
-  bonus             Float    // Annual bonus
-  totalCompensation Float    // Calculated annual: Base + (Stock / 4) + Bonus
-  createdAt         DateTime @default(now())
-  status            String   @default("VERIFIED")
+
+  @@index([companyId, level, location])
+  @@index([totalCompensation])
+  @@index([submittedAt])
+  @@index([location, level])
+  @@map("salaries")
+}
+
+enum Level {
+  L3
+  L4
+  L5
+  L6
+  SDE_I
+  SDE_II
+  SDE_III
+  STAFF
+  PRINCIPAL
+  IC4
+  IC5
+}
+
+enum Currency {
+  INR
+  USD
+  GBP
+  EUR
+}
+
+enum Source {
+  CONTRIBUTOR
+  SCRAPED
+  AI_INFERRED
 }

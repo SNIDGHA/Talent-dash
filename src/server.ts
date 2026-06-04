@@ -1,8 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import { prisma } from './lib/db';
-import { validateSalarySubmission } from './lib/validation';
-import { normalizeCompanyName, calculateTotalCompensation, mapLevelToStandardTier } from './lib/normalization';
+import { validateSalaryIngest } from './lib/validation';
+import { normalizeCompanyName, calculateTotalCompensation } from './lib/normalization';
 
 const app = express();
 const port = process.env.PORT || 3001;
@@ -95,18 +95,17 @@ app.get('/api/salaries', async (req, res) => {
 // 2. POST Salaries Ingestion endpoint
 app.post('/api/salaries', async (req, res) => {
   try {
-    const { isValid, errors, validatedData } = validateSalarySubmission(req.body);
+    const { isValid, errors, validatedData } = validateSalaryIngest(req.body);
     if (!isValid || !validatedData) {
       return res.status(400).json({ errors });
     }
 
     const normCompany = normalizeCompanyName(validatedData.company);
     const totalComp = calculateTotalCompensation(
-      validatedData.baseSalary,
-      validatedData.stockGrant || 0,
-      validatedData.bonus || 0
+      BigInt(validatedData.baseSalary),
+      BigInt(validatedData.bonus),
+      BigInt(validatedData.stock)
     );
-    const levelMapInfo = mapLevelToStandardTier(normCompany, validatedData.level);
 
     let companyRecord = await prisma.company.findUnique({
       where: { name: normCompany }
@@ -125,12 +124,11 @@ app.post('/api/salaries', async (req, res) => {
     const salaryRecord = await prisma.salaryRecord.create({
       data: {
         companyId: companyRecord.id,
-        title: validatedData.title,
+        role: validatedData.role,
         level: validatedData.level,
-        standardLevelTier: levelMapInfo.tier,
         location: validatedData.location,
         baseSalary: validatedData.baseSalary,
-        stockGrant: validatedData.stockGrant || 0,
+        stock: BigInt(validatedData.stock),
         bonus: validatedData.bonus || 0,
         totalCompensation: totalComp,
         status: 'VERIFIED'
@@ -220,8 +218,8 @@ app.get('/api/analytics', async (req, res) => {
         count: filtered.length
       };
     })
-    .sort((a: any, b: any) => b.count - a.count)
-    .slice(0, 6);
+      .sort((a: any, b: any) => b.count - a.count)
+      .slice(0, 6);
 
     const locations = Array.from(new Set(salaries.map((s: any) => s.location)));
     const byLocation = locations.map((loc: any) => {
@@ -234,8 +232,8 @@ app.get('/api/analytics', async (req, res) => {
         count: filtered.length
       };
     })
-    .sort((a: any, b: any) => b.count - a.count)
-    .slice(0, 5);
+      .sort((a: any, b: any) => b.count - a.count)
+      .slice(0, 5);
 
     res.json({
       byTier,

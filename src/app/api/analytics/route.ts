@@ -1,26 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from 'src/lib/db';
+import { prisma } from '@/lib/db';
+import { Level } from '@prisma/client';
 
 export const dynamic = 'force-dynamic';
 
 function calculateMedian(values: number[]): number {
   if (values.length === 0) return 0;
-
   const sorted = [...values].sort((a, b) => a - b);
   const half = Math.floor(sorted.length / 2);
-
   if (sorted.length % 2 !== 0) {
     return sorted[half];
   }
-
   return Math.round((sorted[half - 1] + sorted[half]) / 2);
 }
 
 export async function GET(request: NextRequest) {
   try {
-    const salaries: any = await prisma.salaryRecord.findMany({
+    const salaries = await prisma.salary.findMany({
       where: {
-        status: 'VERIFIED'
+        isVerified: true
       },
       include: {
         company: true
@@ -32,171 +30,101 @@ export async function GET(request: NextRequest) {
         byTier: [],
         byCompany: [],
         byLocation: [],
-        stats: {
-          avgTC: 0,
-          count: 0,
-          topCompany: 'N/A'
-        }
+        stats: { avgTC: 0, count: 0, topCompany: 'N/A' }
       });
     }
 
-    const allTC = salaries.map((s: any) => s.totalCompensation);
+    const processedSalaries = salaries.map((s: any) => ({
+      id: s.id,
+      companyName: s.company.name,
+      level: s.level,
+      location: s.location,
+      totalCompensation: Number(s.totalCompensation) / 100,
+      baseSalary: Number(s.baseSalary) / 100,
+      stock: Number(s.stock) / 100,
+      bonus: Number(s.bonus) / 100
+    }));
 
-    const avgTC = Math.round(
-      allTC.reduce((sum: any, val: any) => sum + val, 0) /
-      salaries.length
-    );
+    const allTC = processedSalaries.map((s: any) => s.totalCompensation);
+    const avgTC = Math.round(allTC.reduce((sum: number, val: number) => sum + val, 0) / processedSalaries.length);
+    const totalCount = processedSalaries.length;
 
-    const totalCount = salaries.length;
-
-    const companyTotals: any = {};
-
-    salaries.forEach((s: any) => {
-      if (!companyTotals[s.company.name]) {
-        companyTotals[s.company.name] = [];
+    const companyTotals: Record<string, number[]> = {};
+    processedSalaries.forEach((s: any) => {
+      if (!companyTotals[s.companyName]) {
+        companyTotals[s.companyName] = [];
       }
-
-      companyTotals[s.company.name].push(s.totalCompensation);
+      companyTotals[s.companyName].push(s.totalCompensation);
     });
 
     let topCompany = 'N/A';
     let maxMedianPay = 0;
-
-    Object.entries(companyTotals).forEach(
-      ([name, pays]: any) => {
-        const med = calculateMedian(pays);
-
-        if (med > maxMedianPay) {
-          maxMedianPay = med;
-          topCompany = name;
-        }
+    Object.entries(companyTotals).forEach(([name, pays]: [string, number[]]) => {
+      const med = calculateMedian(pays);
+      if (med > maxMedianPay) {
+        maxMedianPay = med;
+        topCompany = name;
       }
-    );
-
-    const tiers = [
-      'JUNIOR',
-      'MID',
-      'SENIOR',
-      'STAFF',
-      'PRINCIPAL'
-    ];
-
-    const byTier = tiers.map((tier: any) => {
-      const filtered = salaries.filter(
-        (s: any) => s.standardLevelTier === tier
-      );
-
-      return {
-        tier,
-
-        displayName:
-          tier.charAt(0) + tier.slice(1).toLowerCase(),
-
-        medianTC: calculateMedian(
-          filtered.map((s: any) => s.totalCompensation)
-        ),
-
-        medianBase: calculateMedian(
-          filtered.map((s: any) => s.baseSalary)
-        ),
-
-        medianStock: calculateMedian(
-          filtered.map((s: any) => s.stockGrant / 4)
-        ),
-
-        medianBonus: calculateMedian(
-          filtered.map((s: any) => s.bonus)
-        ),
-
-        count: filtered.length
-      };
     });
 
-    const activeCompanies = Array.from(
-      new Set(
-        salaries.map((s: any) => s.company.name)
-      )
-    );
+    const levelsList = Object.values(Level);
+    const byTier = levelsList.map((lvl: any) => {
+      const filtered = processedSalaries.filter((s: any) => s.level === lvl);
+      return {
+        tier: lvl,
+        displayName: lvl,
+        medianTC: calculateMedian(filtered.map((s: any) => s.totalCompensation)),
+        medianBase: calculateMedian(filtered.map((s: any) => s.baseSalary)),
+        medianStock: calculateMedian(filtered.map((s: any) => s.stock)),
+        medianBonus: calculateMedian(filtered.map((s: any) => s.bonus)),
+        count: filtered.length
+      };
+    }).filter(t => t.count > 0);
 
+    const activeCompanies = Array.from(new Set(processedSalaries.map((s: any) => s.companyName))) as string[];
     const companyData = activeCompanies
-      .map((compName: any) => {
-        const filtered = salaries.filter(
-          (s: any) => s.company.name === compName
-        );
-
+      .map((compName: string) => {
+        const filtered = processedSalaries.filter((s: any) => s.companyName === compName);
         return {
           company: compName,
-
-          medianTC: calculateMedian(
-            filtered.map((s: any) => s.totalCompensation)
-          ),
-
-          medianBase: calculateMedian(
-            filtered.map((s: any) => s.baseSalary)
-          ),
-
-          medianStock: calculateMedian(
-            filtered.map((s: any) => s.stockGrant / 4)
-          ),
-
-          medianBonus: calculateMedian(
-            filtered.map((s: any) => s.bonus)
-          ),
-
+          medianTC: calculateMedian(filtered.map((s: any) => s.totalCompensation)),
+          medianBase: calculateMedian(filtered.map((s: any) => s.baseSalary)),
+          medianStock: calculateMedian(filtered.map((s: any) => s.stock)),
+          medianBonus: calculateMedian(filtered.map((s: any) => s.bonus)),
           count: filtered.length
         };
       })
-      .sort((a: any, b: any) => b.count - a.count)
+      .sort((a, b) => b.count - a.count)
       .slice(0, 6);
 
-    const locations = Array.from(
-      new Set(
-        salaries.map((s: any) => s.location)
-      )
-    );
-
+    const locations = Array.from(new Set(processedSalaries.map((s: any) => s.location))) as string[];
     const byLocation = locations
-      .map((loc: any) => {
-        const filtered = salaries.filter(
-          (s: any) => s.location === loc
-        );
-
+      .map((loc: string) => {
+        const filtered = processedSalaries.filter((s: any) => s.location === loc);
         return {
           location: loc,
-
-          medianTC: calculateMedian(
-            filtered.map((s: any) => s.totalCompensation)
-          ),
-
+          medianTC: calculateMedian(filtered.map((s: any) => s.totalCompensation)),
           count: filtered.length
         };
       })
-      .sort((a: any, b: any) => b.count - a.count)
+      .sort((a, b) => b.count - a.count)
       .slice(0, 5);
 
     return NextResponse.json({
       byTier,
       byCompany: companyData,
       byLocation,
-
       stats: {
         avgTC,
         count: totalCount,
-        topCompany: `${topCompany} ($${Math.round(
-          maxMedianPay / 1000
-        )}k median)`
+        topCompany: `${topCompany} (₹${Math.round(maxMedianPay / 100000)}L median)`
       }
     });
   } catch (error: any) {
     console.error('GET /api/analytics error:', error);
-
     return NextResponse.json(
-      {
-        error: 'Failed to compute analytics'
-      },
-      {
-        status: 500
-      }
+      { error: 'Failed to compute analytics' },
+      { status: 500 }
     );
   }
 }
