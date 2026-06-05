@@ -1,11 +1,11 @@
 generator client {
   provider        = "prisma-client-js"
-  engineType      = "client"
-  previewFeatures = ["driverAdapters", "queryCompiler"]
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
   provider = "postgresql"
+
 }
 
 model Company {
