@@ -1,7 +1,9 @@
 name = "talent-dash"
-compatibility_date = "2024-12-30"
-compatibility_flags = ["nodejs_compat"]
 
-[vars]
-# Set all environment variables (DATABASE_URL, Clerk keys, R2 credentials, etc.)
-# in the Vercel or Cloudflare Pages dashboard — never commit secrets to source control.
+main = ".open-next/worker.js"
+
+compatibility_date = "2024-12-30"
+
+compatibility_flags = [
+  "nodejs_compat"
+]
