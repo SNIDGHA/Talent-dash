@@ -1,6 +1,6 @@
 import { prisma, serializeBigInt } from '@/lib/db';
 import CompareClient from '@/components/features/CompareClient';
-export const runtime = "edge";
+export const runtime = "nodejs";
 export const dynamic = 'force-dynamic';
 
 export default async function ComparePage() {

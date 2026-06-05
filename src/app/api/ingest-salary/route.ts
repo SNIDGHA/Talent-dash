@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma, serializeBigInt } from '@/lib/db';
 import { validateSalaryIngest } from '@/lib/validation';
 import { normalizeCompanyName, getCompanyDisplayName, getCompanySlug } from '@/lib/normalization';
-export const runtime = "edge";
+export const runtime = "nodejs";
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {

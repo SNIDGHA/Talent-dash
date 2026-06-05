@@ -26,14 +26,14 @@ interface CompanyPageProps {
   }>;
 }
 
-export async function generateStaticParams() {
-  const companies = await prisma.company.findMany({
-    select: { slug: true }
-  });
-  return companies.map((c: any) => ({
-    slug: c.slug
-  }));
-}
+// export async function generateStaticParams() {
+//   const companies = await prisma.company.findMany({
+//     select: { slug: true }
+//   });
+//   return companies.map((c: any) => ({
+//     slug: c.slug
+//   }));
+// }
 
 function calculateBigIntMedian(values: bigint[]): bigint {
   if (values.length === 0) return 0n;

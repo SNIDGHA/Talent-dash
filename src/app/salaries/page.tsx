@@ -8,7 +8,7 @@ import { MapPin, ArrowUpDown, ChevronLeft, ChevronRight, Sparkles, TrendingUp, B
 import React from 'react';
 import SalaryFilters from '@/components/features/SalaryFilters';
 import Script from 'next/script';
-export const runtime = "edge";
+export const runtime = "nodejs";
 
 export const revalidate = 60; // Cache and revalidate salaries page every 60 seconds (ISR)
 
